@@ -1,13 +1,17 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
-import { Vote, User, LogIn, Plus } from "lucide-react";
+import { Vote, User, LogIn, Plus, LogOut } from "lucide-react";
 
 export function Header() {
-  // TODO: Replace with actual auth state
-  const isAuthenticated = false;
-  const user = null;
+  const { user, loading, signOut } = useAuth();
+  const isAuthenticated = !!user;
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <header className="border-b">
@@ -36,7 +40,9 @@ export function Header() {
           </nav>
 
           <div className="flex items-center space-x-2">
-            {isAuthenticated ? (
+            {loading ? (
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            ) : isAuthenticated ? (
               <>
                 <Button asChild className="hidden md:flex">
                   <Link href="/create-poll">
@@ -44,8 +50,11 @@ export function Header() {
                     New Poll
                   </Link>
                 </Button>
-                <Button variant="ghost" size="icon">
-                  <User className="h-4 w-4" />
+                <span className="text-sm font-medium hidden md:block">
+                  Welcome, {user.username}
+                </span>
+                <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
                 </Button>
               </>
             ) : (

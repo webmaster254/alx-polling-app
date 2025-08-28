@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 
 export function RegisterForm() {
@@ -14,6 +16,11 @@ export function RegisterForm() {
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  
+  const router = useRouter();
+  const { signUp } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -25,21 +32,48 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
+    setSuccess("");
     
-    // TODO: Implement registration logic
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match");
+      setError("Passwords don't match");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
       setIsLoading(false);
       return;
     }
     
-    console.log("Register attempt:", formData);
+    const { error } = await signUp(formData.email, formData.password, formData.username);
     
-    setIsLoading(false);
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+    } else {
+      setSuccess("Registration successful! Please check your email to confirm your account.");
+      setIsLoading(false);
+      // Optionally redirect to login page after a delay
+      setTimeout(() => {
+        router.push('/auth/login');
+      }, 3000);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md text-sm">
+          {success}
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="username">Username</Label>
         <Input
@@ -49,6 +83,7 @@ export function RegisterForm() {
           value={formData.username}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="space-y-2">
@@ -60,6 +95,7 @@ export function RegisterForm() {
           value={formData.email}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="space-y-2">
@@ -67,10 +103,11 @@ export function RegisterForm() {
         <Input
           id="password"
           type="password"
-          placeholder="Choose a password"
+          placeholder="Choose a password (min 6 characters)"
           value={formData.password}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="space-y-2">
@@ -82,6 +119,7 @@ export function RegisterForm() {
           value={formData.confirmPassword}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <Button type="submit" className="w-full" disabled={isLoading}>
